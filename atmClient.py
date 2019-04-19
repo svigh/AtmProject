@@ -17,7 +17,10 @@ def main():
 		print(responseDict)
 		token = getToken(responseDict)
 		while req.status_code == 200 or req.status_code == 201:
-			req = requests.put(url + "/user/" + str(token), params={"amount":input("Insert amount to subtract")})
+			try:
+				req = requests.put(url + "/user/" + str(token), params={"amount":input("Insert amount to subtract (Ctrl+D to go back)")})
+			except EOFError:
+				break
 			print(req.url)
 			print(req.status_code)
 			print(req.content)
