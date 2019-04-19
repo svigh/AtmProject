@@ -41,64 +41,39 @@ def validToken(token):
 class User(Resource):
 	def get(self, token):
 		pin = int(request.args["pin"])
-		for user in users:
-			if pin == user["pin"]:
-				if "card_num" in request.args:
-					card_num = int(request.args["card_num"])
-				else:
-					return "No card number specified.", 404
+		card_num = int(request.args["card_num"])
 
+		for user in users:
+			print(user)
+			if pin == user["pin"] and card_num == user["card_num"]:
 				token = generate_access_token(pin, card_num)
 				global verifiedUsers
 				verifiedUsers[token] = (user["pin"], user["card_num"])
 				print(verifiedUsers)
 				packet = {"text": "Welcome", "token":token}
-
 				return packet, 200
-			else:
-				if "card_num" in request.args:
-					card_num = int(request.args["card_num"])
-				else:
-					return "No card number specified.", 404
 
-				packet = {"text": "Burn", "token":""}
-				return packet, 404
-
-	def post(self, name):
-		age = request.args.get("age")
-		occupation = request.args.get("occupation")
-
-		if age is None or occupation is None:
-			return "Cannot pass empty arguments to new user", 400
-
-		for user in users:
-			if name == user["name"]:
-				return "User {} already exists".format(name), 400
-
-		user = {
-			"name": name,
-			"age": age,
-			"occupation": occupation
-		}
-		users.append(user)
-		return user, 201
+		packet = {"text": "Wrong pin for given card number", "token":""}
+		return packet, 404
 
 	def put(self, token):
 		if validToken(token):
 			for user in users:
 				if user["pin"] == verifiedUsers[token][0] and user["card_num"] == verifiedUsers[token][1]:
 					subtract_amount = int(request.args["amount"])
-					user["balance"] -= subtract_amount
+					if subtract_amount > user["balance"]:
+						return "Not enough funds", 404
+					else:
+						user["balance"] -= subtract_amount
 					return user, 201
+			return "Information mismatch, token exists, card number and pin dont match", 404
+		return token + "token not found", 404
 
 	def delete(self, name):
 		global users
 		users = [user for user in users if user["name"] != name]
 		return "{} is deleted".format(name), 200
 
-
-# @app.route('/verified/token')
-# api.add_resource(User, "/user/")
 api.add_resource(User, "/user/<int:token>")
-# api.add_resource(User, resourceString)
+
 app.run(host="0.0.0.0", debug=True)

@@ -16,7 +16,7 @@ def main():
 		responseDict = json.loads(req.content) # unpack b' format to dictionary
 		print(responseDict)
 		token = getToken(responseDict)
-		if req.status_code == 200:
+		while req.status_code == 200 or req.status_code == 201:
 			req = requests.put(url + "/user/" + str(token), params={"amount":input("Insert amount to subtract")})
 			print(req.url)
 			print(req.status_code)
