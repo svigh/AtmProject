@@ -1,19 +1,18 @@
 from flask import Flask, request
 from flask_restful import Resource, Api
-from flask_marshmallow import Marshmallow
 import random
+import requests
+import json
 
 app = Flask(__name__)
 
 api = Api(app)
-ma = Marshmallow(app)
-resourceString = ""
 
 def generate_access_token(pin, card_num):
 	random.seed(card_num)
 	return random.randint(0,pin)
 
-users = [
+localCacheUsers = [
 	{
 		"pin": 1001,
 		"card_num": 1,
@@ -39,26 +38,38 @@ def validToken(token):
 	return 0
 
 class User(Resource):
-	def get(self, token):
+	def get(self, token):	# Connect account to perform operations
 		pin = int(request.args["pin"])
 		card_num = int(request.args["card_num"])
 
-		for user in users:
-			print(user)
-			if pin == user["pin"] and card_num == user["card_num"]:
-				token = generate_access_token(pin, card_num)
-				global verifiedUsers
-				verifiedUsers[token] = (user["pin"], user["card_num"])
-				print(verifiedUsers)
-				packet = {"text": "Welcome", "token":token}
+		def credentials_exist_locally():
+			for user in localCacheUsers:
+				if pin == user["pin"] and card_num == user["card_num"]:
+					token = generate_access_token(pin, card_num)
+					global verifiedUsers
+					verifiedUsers[token] = (user["pin"], user["card_num"])
+					return {"local_response": 1, "token": token, "balance": user["balance"]}
+			return {"local_response": 0, "token": 0}
+
+		local_creds = credentials_exist_locally()
+
+		if local_creds["local_response"]:
+			packet = {"text": "SUCCES", "token":local_creds["token"], "balance":local_creds["balance"]}
+			return packet, 200
+		else:
+			print("Local cache might be mismatched with HQ.\nUpdating cache...")
+			update_local_user_cache()
+			local_creds = credentials_exist_locally()
+			if local_creds["local_response"]:
+				packet = {"text": "SUCCES", "token":local_creds["token"], "balance":local_creds["balance"]}
 				return packet, 200
+			else:
+				packet = {"text": "FAIL: Wrong pin for given card number or account not existent", "token":""}
+				return packet, 404
 
-		packet = {"text": "Wrong pin for given card number", "token":""}
-		return packet, 404
-
-	def put(self, token):
+	def put(self, token):  # Do operation on connected account
 		if validToken(token):
-			for user in users:
+			for user in localCacheUsers:
 				if user["pin"] == verifiedUsers[token][0] and user["card_num"] == verifiedUsers[token][1]:
 					subtract_amount = int(request.args["amount"])
 					if subtract_amount > user["balance"]:
@@ -69,11 +80,26 @@ class User(Resource):
 			return "Information mismatch, token exists, card number and pin dont match", 404
 		return token + "token not found", 404
 
-	def delete(self, name):
-		global users
-		users = [user for user in users if user["name"] != name]
-		return "{} is deleted".format(name), 200
+def update_local_user_cache():
+	def get_users_from_HQ(_url = 'http://127.0.0.1:6000/atm/users'):
+		responseDict = {}
+		req = requests.get(url=_url)
+		print(req.url)
+		print(req.status_code)
+		responseDict = json.loads(req.content) # unpack b' format to dictionary
+		print(responseDict)
+		return responseDict
+	updated_user_dict = get_users_from_HQ()
+
+	def merge_user_bases(users_to_integrate):
+		for user in users_to_integrate:
+			if user in localCacheUsers:
+				pass
+			else:
+				localCacheUsers.append(user)
+	merge_user_bases(updated_user_dict)
 
 api.add_resource(User, "/user/<int:token>")
 
-app.run(host="0.0.0.0", debug=True)
+if __name__ == "__main__":
+	app.run(host="0.0.0.0", port="5000", debug=True)
