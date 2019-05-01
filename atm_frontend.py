@@ -8,24 +8,31 @@ app = Flask(__name__)
 
 api = Api(app)
 
+HQ_SERVER = 'http://127.0.0.1:6000/atm/users'
+
 def generate_access_token(pin, card_num):
 	random.seed(card_num)
 	return random.randint(0,pin)
 
 localCacheUsers = [
 	{
-		"pin": 1001,
 		"card_num": 1,
+		"pin": 1001,
 		"balance": 1000
 	},
 	{
-		"pin": 1002,
 		"card_num": 2,
+		"pin": 1002,
 		"balance": 12400
 	},
 	{
-		"pin": 1003,
+		"card_num": 12,
+		"pin": 1112,
+		"balance": 120
+	},
+	{
 		"card_num": 3,
+		"pin": 1003,
 		"balance": 10
 	}
 ]
@@ -39,8 +46,9 @@ def validToken(token):
 
 class User(Resource):
 	def get(self, token):	# Connect account to perform operations
-		pin = int(request.args["pin"])
+		update_local_user_cache()
 		card_num = int(request.args["card_num"])
+		pin = int(request.args["pin"])
 
 		def credentials_exist_locally():
 			for user in localCacheUsers:
@@ -64,8 +72,8 @@ class User(Resource):
 				packet = {"text": "SUCCES", "token":local_creds["token"], "balance":local_creds["balance"]}
 				return packet, 200
 			else:
-				packet = {"text": "FAIL: Wrong pin for given card number or account not existent", "token":""}
-				return packet, 404
+				packet = {"text": "FAIL: Wrong pin for given card number or account not existent", "token":"", "balance": -1}
+				return packet, 411
 
 	def put(self, token):  # Do operation on connected account
 		if validToken(token):
@@ -76,27 +84,44 @@ class User(Resource):
 						return "Not enough funds", 404
 					else:
 						user["balance"] -= subtract_amount
+						requests.put(url=HQ_SERVER, params={"card_num": user["card_num"], "pin": user["pin"], "balance": user["balance"]})	# Update master database
 					return user, 201
 			return "Information mismatch, token exists, card number and pin dont match", 404
 		return token + "token not found", 404
 
 def update_local_user_cache():
-	def get_users_from_HQ(_url = 'http://127.0.0.1:6000/atm/users'):
+
+	def get_users_from_HQ(_url = HQ_SERVER):
 		responseDict = {}
 		req = requests.get(url=_url)
-		print(req.url)
-		print(req.status_code)
 		responseDict = json.loads(req.content) # unpack b' format to dictionary
-		print(responseDict)
 		return responseDict
 	updated_user_dict = get_users_from_HQ()
 
 	def merge_user_bases(users_to_integrate):
-		for user in users_to_integrate:
-			if user in localCacheUsers:
-				pass
-			else:
-				localCacheUsers.append(user)
+		global localCacheUsers
+
+		for local_user in localCacheUsers:		# Update users balances from master database
+			for user in users_to_integrate:
+				if user["card_num"] == local_user["card_num"] and user["pin"] == local_user["pin"]:
+					local_user["balance"] = user["balance"]
+
+
+		local_card_nums = [v for local_user in localCacheUsers for (k,v) in local_user.items() if k == "card_num"]
+		local_pin_nums = [v for local_user in localCacheUsers for (k,v) in local_user.items() if k == "pin"]
+
+		for user in users_to_integrate:			# Fetch new users
+			if user["card_num"] in local_card_nums and user["pin"] in local_pin_nums and local_card_nums.index(user["card_num"]) == local_pin_nums.index(user["pin"]):
+				continue
+			localCacheUsers.append(user)
+
+		global_card_nums = [v for user in users_to_integrate for (k,v) in user.items() if k == "card_num"]
+		global_pin_nums = [v for user in users_to_integrate for (k,v) in user.items() if k == "pin"]
+
+		for local_user in localCacheUsers:		# Fetch deleted users
+			if local_user["card_num"] not in global_card_nums and local_user["pin"] not in global_pin_nums:
+				del localCacheUsers[localCacheUsers.index(local_user)]
+
 	merge_user_bases(updated_user_dict)
 
 api.add_resource(User, "/user/<int:token>")

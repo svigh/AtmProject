@@ -10,14 +10,14 @@ def main():
 			return int(responseDict["token"]) if responseDict["token"] is not "" else -1
 
 		def getBalance(responseDict):
-			return int(responseDict["balance"]) if responseDict["balance"] is not "" else -1
+			return int(responseDict["balance"]) if responseDict["balance"] and responseDict["balance"] is not "" else -1
 
 		print("Please insert info.")
 		req = requests.get(url + "/user/0", params={"card_num":input("Insert card num: "), "pin":input("Insert PIN: ")})
-		# print(req.url)
-		# print(req.status_code)
 		responseDict = json.loads(req.content) # unpack b' format to dictionary
-		# print(responseDict)
+		if req.status_code == 411:
+			print("That card number/pin combo doesn't exist, please retry.")
+			continue
 
 		token = getToken(responseDict)
 		balance = getBalance(responseDict)
@@ -25,11 +25,10 @@ def main():
 			try:
 				print("Available balance: {}".format(balance))
 				req = requests.put(url + "/user/" + str(token), params={"amount":input("Insert amount to subtract (Ctrl+D to go back)")})
+				responseDict = json.loads(req.content) # unpack b' format to dictionary
+				balance = getBalance(responseDict)
 			except EOFError:
 				break
-			print(req.url)
-			print(req.status_code)
-			print(req.content)
 
 if __name__ == "__main__":
 	try:
