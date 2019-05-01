@@ -16,45 +16,49 @@ def main():
 
 		if option == "1":	# Get users
 			req = requests.get(url + "/admin/" + input("Insert key: "))
-			# print(req.url)
-			# print(req.status_code)
-			responseDict = json.loads(req.content) # unpack b' format to dictionary
-			idx = 0
-			for user in responseDict:
-				idx+=1
-				print("User ", idx, user)
+
+			if req.status_code == 200:
+				responseDict = json.loads(req.content) # unpack b' format to dictionary
+
+				idx = 0
+				for user in responseDict:
+					idx+=1
+					print("User ", idx, user)
+			if req.status_code == 408:
+				print(req.text)
+			else:
+				print("Untreated fail")
+
 
 		if option == "2":	# Add user
 			req = requests.post(url + "/admin/" + input("Insert key: "), params={"card_num": input("Card number to add "), "pin": input("Pin number to add "), "balance" : input("Starting balance of the account ")})
-			if req.status_code == 200:
+
+			if req.status_code == 200:		# SUCCESS
 				print("\nUser added with success")
 			else:
-				if req.status_code == 412:
-					print("\nCouldn't add user, it already exists")
+				if req.status_code == 412:	# Already exists
+					print(req.text)
+				if req.status_code == 408:	# Invalid passKey
+					print(req.text)
 				else:
 					print("\nCouldn't add user, untreated error code")
 
 		if option == "3":	# Delete user
 			req = requests.delete(url + "/admin/" + input("Insert key: "), params={"card_num": input("Card number to delete "), "pin": input("Pin number to delete ")})
-			if req.status_code == 200:
+
+			if req.status_code == 200:		# SUCCESS
 				print("\nUser deleted with success")
 			else:
-				if req.status_code == 412:
-					print("\nCouldn't delete user, it doesn't exist")
+				if req.status_code == 412:	# Doesn't exist
+					print(req.text)
+
+				if req.status_code == 408:	# Invalid passKey
+					print(req.text)
 				else:
 					print("\nCouldn't add user, untreated error code")
 
 		if option == "4":	# Exit
 			break
-
-		# while req.status_code == 200 or req.status_code == 201:
-		# 	try:
-		# 		req = requests.put(url + "/user/" + str(token), params={"amount":input("Insert amount to subtract (Ctrl+D to go back)")})
-		# 	except EOFError:
-		# 		break
-		# 	print(req.url)
-		# 	print(req.status_code)
-		# 	print(req.content)
 
 if __name__ == "__main__":
 	try:

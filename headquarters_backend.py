@@ -78,7 +78,7 @@ class Admin(Resource):
 			local_pin_nums = [v for local_user in globalCacheUsers for (k,v) in local_user.items() if k == "pin"]
 
 			if card_num in local_card_nums and pin in local_pin_nums and local_card_nums.index(card_num) == local_pin_nums.index(pin):
-				return "User already exists", 412
+				return "\nUser already exists", 412
 			else:
 				newUser["card_num"] = card_num
 				newUser["pin"] = pin
@@ -100,7 +100,7 @@ class Admin(Resource):
 			local_pin_nums = [v for local_user in globalCacheUsers for (k,v) in local_user.items() if k == "pin"]
 
 			if card_num not in local_card_nums or pin not in local_pin_nums:
-				return "User doesn't exist", 412
+				return "\nUser doesn't exist", 412
 			else:
 				for user in globalCacheUsers:
 					if user["card_num"] == card_num and user["pin"] == pin:
