@@ -4,8 +4,12 @@ import random
 import requests
 
 app = Flask(__name__)
-masterKey = 123
-decodeCheck = 1230
+
+def valid_passKey(passKey):
+	masterKey = 1234
+	decodeCheck = 12340
+	if passKey != 0 and passKey is not None:
+		return decodeCheck // passKey == masterKey
 
 api = Api(app)
 
@@ -53,11 +57,6 @@ class Atm(Resource):
 			if user["card_num"] == card_num and user["pin"] == pin:
 				user["balance"] = balance
 
-
-def valid_passKey(passKey):
-	if passKey * masterKey == decodeCheck:
-		return 1
-	return 0
 
 class Admin(Resource):
 	def get(self, passKey):		# Give all users
