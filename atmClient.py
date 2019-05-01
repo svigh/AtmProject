@@ -14,7 +14,7 @@ def main():
 			return int(responseDict["token"]) if responseDict["token"] is not "" else -1
 
 		def getBalance(responseDict):
-			return int(responseDict["balance"]) if responseDict["balance"] and responseDict["balance"] is not "" else -1
+			return int(responseDict["balance"]) if responseDict["balance"] >=0 and responseDict["balance"] is not "" else -1
 
 		print("\nPlease insert info")
 		try:
@@ -57,7 +57,7 @@ def main():
 					responseDict = json.loads(req.content) # unpack b' format to dictionary
 					balance = getBalance(responseDict)
 				else:
-					if req.status_code == 411:
+					if req.status_code // 100 == 4: # Minor error, insufficient funds (411)
 						print(RED+req.text+NC)
 					else:
 						print(RED+"Untreated error"+NC)

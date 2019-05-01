@@ -39,11 +39,10 @@ def main():
 					idx+=1
 					print(GREEN, "User ", idx, user, NC)
 			else:
-				if req.status_code == 408:
+				if req.status_code // 100 == 4: # Invalid passKey
 					print(RED+req.text+NC)
 				else:
 					print(RED+"Untreated fail"+NC)
-
 
 		if option == "2":	# Add user
 			try:
@@ -76,9 +75,7 @@ def main():
 			if req.status_code == 200:		# SUCCESS
 				print(GREEN+"\nUser added with success"+NC)
 			else:
-				if req.status_code == 412:	# Already exists
-					print(RED+req.text+NC)
-				if req.status_code == 408:	# Invalid passKey
+				if req.status_code // 100 == 4:	# Already exists (412) or invalid passKey (408)
 					print(RED+req.text+NC)
 				else:
 					print(RED+"\nCouldn't add user, untreated error code"+NC)
@@ -109,15 +106,13 @@ def main():
 			if req.status_code == 200:		# SUCCESS
 				print(GREEN+"\nUser deleted with success"+NC)
 			else:
-				if req.status_code == 412:	# Doesn't exist
-					print(RED+req.text+NC)
-
-				if req.status_code == 408:	# Invalid passKey
+				if req.status_code // 100 == 4:	# Doesn't exist (412) or invalid passKey (408)
 					print(RED+req.text+NC)
 				else:
-					print(RED+"\nCouldn't add user, untreated error code"+NC)
+					print(RED+"\nCouldn't delete user, untreated error code"+NC)
 
 		if option == "4":	# Exit
+			print(GREEN+"Graceful exit"+NC)
 			break
 
 if __name__ == "__main__":
