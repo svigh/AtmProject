@@ -2,7 +2,7 @@ import requests
 from requests.auth import HTTPDigestAuth
 import json
 
-url = 'http://127.0.0.1:6000'
+url = 'http://0.0.0.0:6000'
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 CYAN='\033[0;36m'
@@ -11,15 +11,25 @@ NC='\033[0m'		# No Color
 def main():
 	while(1):
 		print("Options:\n \
-			1) Get list of all users\n \
-			2) Add new user\n \
-			3) Delete existing user\n \
-			4) Exit\n \
-			")
+		1) Get list of all users\n \
+		2) Add new user\n \
+		3) Delete existing user\n \
+		4) Exit\n \
+		")
 		option = input("Choose option ")
 
 		if option == "1":	# Get users
-			req = requests.get(url + "/admin/" + input("Insert key(10): "))
+			try:
+				passKey = input("Insert passKey(10): ")
+				if passKey.isdigit():
+					req = requests.get(url + "/admin/" + passKey)
+				else:
+					print(RED+"Only numbers allowed"+NC)
+					continue
+			except requests.RequestException as e:
+				print(RED, e, "\n", NC)
+				print(RED+"Couldn't connect to HQ server, is it open? (0.0.0.0:6000 - default)"+NC)
+				continue
 
 			if req.status_code == 200:
 				responseDict = json.loads(req.content) # unpack b' format to dictionary
@@ -36,8 +46,33 @@ def main():
 
 
 		if option == "2":	# Add user
-			req = requests.post(url + "/admin/" + input("Insert key: "), params={"card_num": input("Card number to add "), "pin": input("Pin number to add "), "balance" : input("Starting balance of the account ")})
+			try:
+				passKey = input("Insert passKey(10): ")
+				if passKey.isdigit():
+					card_num = input("Card number to add: ")
+					if card_num.isdigit():
+						pin = input("Pin number to add: ")
+						if pin.isdigit():
+							balance = input("Starting balance of the account: ")
+							if balance.isdigit():
+								req = requests.post(url + "/admin/" + passKey, params={"card_num": card_num, "pin": pin, "balance": balance})
+							else:
+								print(RED+"Only numbers allowed"+NC)
+								continue
+						else:
+							print(RED+"Only numbers allowed"+NC)
+							continue
+					else:
+						print(RED+"Only numbers allowed"+NC)
+						continue
+				else:
+					print(RED+"Only numbers allowed"+NC)
+					continue
 
+			except requests.RequestException as e:
+				print(RED, e, "\n", NC)
+				print(RED+"Couldn't connect to HQ server, is it open? (0.0.0.0:6000 - default)"+NC)
+				continue
 			if req.status_code == 200:		# SUCCESS
 				print(GREEN+"\nUser added with success"+NC)
 			else:
@@ -49,8 +84,28 @@ def main():
 					print(RED+"\nCouldn't add user, untreated error code"+NC)
 
 		if option == "3":	# Delete user
-			req = requests.delete(url + "/admin/" + input("Insert key: "), params={"card_num": input("Card number to delete "), "pin": input("Pin number to delete ")})
+			try:
+				passKey = input("Insert passKey(10): ")
+				if passKey.isdigit():
+					card_num = input("Card number to delete: ")
+					if card_num.isdigit():
+						pin = input("Pin number to delete: ")
+						if pin.isdigit():
+							req = requests.delete(url + "/admin/" + passKey, params={"card_num": card_num, "pin": pin})
+						else:
+							print(RED+"Only numbers allowed"+NC)
+							continue
+					else:
+						print(RED+"Only numbers allowed"+NC)
+						continue
+				else:
+					print(RED+"Only numbers allowed"+NC)
+					continue
 
+			except requests.RequestException as e:
+				print(RED, e, "\n", NC)
+				print(RED+"Couldn't connect to HQ server, is it open? (0.0.0.0:6000 - default)"+NC)
+				continue
 			if req.status_code == 200:		# SUCCESS
 				print(GREEN+"\nUser deleted with success"+NC)
 			else:

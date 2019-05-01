@@ -73,7 +73,7 @@ class User(Resource):
 				return packet, 200
 			else:
 				packet = {"text": "FAIL: Wrong pin for given card number or account not existent", "token":"", "balance": -1}
-				return packet, 411
+				return packet, 420
 
 	def put(self, token):  # Do operation on connected account
 		if validToken(token):
@@ -81,13 +81,13 @@ class User(Resource):
 				if user["pin"] == verifiedUsers[token][0] and user["card_num"] == verifiedUsers[token][1]:
 					subtract_amount = int(request.args["amount"])
 					if subtract_amount > user["balance"]:
-						return "Not enough funds", 404
+						return "Not enough funds", 411
 					else:
 						user["balance"] -= subtract_amount
 						requests.put(url=HQ_SERVER, params={"card_num": user["card_num"], "pin": user["pin"], "balance": user["balance"]})	# Update master database
-					return user, 201
-			return "Information mismatch, token exists, card number and pin dont match", 404
-		return token + "token not found", 404
+					return user, 200
+			return "Information mismatch, token exists, card number and pin dont match", 420
+		return str(token) + "token not found", 420
 
 def update_local_user_cache():
 

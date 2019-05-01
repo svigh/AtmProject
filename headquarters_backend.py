@@ -57,7 +57,6 @@ class Atm(Resource):
 			if user["card_num"] == card_num and user["pin"] == pin:
 				user["balance"] = balance
 
-
 class Admin(Resource):
 	def get(self, passKey):		# Give all users
 		if valid_passKey(passKey):
