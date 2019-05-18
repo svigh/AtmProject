@@ -1,5 +1,5 @@
+#!/usr/bin/python3
 import requests
-from requests.auth import HTTPDigestAuth
 import json
 
 url = 'http://0.0.0.0:5000'
